@@ -84,3 +84,13 @@ func BreakMultiLineFileByteCipher(filePath string) (state DecodeState) {
 	}
 	return
 }
+
+func RepeatingKeyXor(stringToEncode, key string) string {
+	encodedBytes := make([]byte, len(stringToEncode))
+
+	for i, b := range []byte(stringToEncode) {
+		encodedBytes[i] = b ^ key[i%len(key)]
+	}
+
+	return hex.EncodeToString(encodedBytes)
+}

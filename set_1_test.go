@@ -22,17 +22,25 @@ func TestStringXor(t *testing.T) {
 }
 
 // Challenge 3 test
-func TestSingleByteSingleStringDetecting(t *testing.T) {
+func TestSingleStringByteCipherDetecting(t *testing.T) {
 	decode := matasano.BreakSingleLineByteCipher(EncodedString)
 	if decode.String != DecodedString || decode.Cipher != DecodedCipher {
 		t.Errorf("Wrong answer, got %s with cipher 0x%x", decode.String, decode.Cipher)
 	}
 }
 
-// Challenge 3 test
-func TestSingleByteMultiStringDetecting(t *testing.T) {
+// Challenge 4 test
+func TestMultiStringFileByteCipherDetecting(t *testing.T) {
 	decode := matasano.BreakMultiLineFileByteCipher(FilePath)
 	if decode.String != DecodedFileString || decode.Cipher != DecodedFileCipher || decode.Line != DecodedFileLine {
 		t.Errorf("Wrong answer, got %s on line %d with cipher 0x%x", decode.String, decode.Line, decode.Cipher)
+	}
+}
+
+// Challenge 5 test
+func TestReapeatingKeyXor(t *testing.T) {
+	encodedString := matasano.RepeatingKeyXor(OpeningStanza, RepeatingKeyCipher)
+	if encodedString != RepeatingXorResult {
+		t.Errorf("Wrong answer, got %s", encodedString)
 	}
 }
