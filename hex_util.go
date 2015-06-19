@@ -4,11 +4,11 @@ import (
 	"encoding/hex"
 )
 
-func HexCharsToValues(s *string) (*[]byte, error) {
-	b, err := hex.DecodeString(*s)
+func HexCharsToValues(s string) []byte {
+	b, err := hex.DecodeString(s)
 	if err != nil {
-		return nil, err
+		panic(err.Error())
 	}
 
-	return &b, nil
+	return b
 }

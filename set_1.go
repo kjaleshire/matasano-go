@@ -6,21 +6,20 @@ import (
 )
 
 type DecodeState struct {
-	Score  int32
+	Score  uint
 	Cipher uint8
 	Line   uint32
 	String string
 }
 
-func HexCharsToValuesBase64(s string) (string, error) {
-	b, err := HexCharsToValues(&s)
-	if err != nil {
-		return "", err
-	}
+// Challenge 1
+func HexCharsToValuesBase64(s string) string {
+	b := HexCharsToValues(s)
 
-	return base64.StdEncoding.EncodeToString(*b), nil
+	return base64.StdEncoding.EncodeToString(b)
 }
 
+// Challenge 2
 func StringXor(s1 string, s2 string) (string, error) {
 	bytes_1, err := hex.DecodeString(s1)
 	if err != nil {
@@ -32,7 +31,7 @@ func StringXor(s1 string, s2 string) (string, error) {
 		return "", err
 	}
 
-	byte_size := 0
+	var byte_size int
 	if len(bytes_1) < len(bytes_2) {
 		byte_size = len(bytes_1)
 	} else {
@@ -47,6 +46,23 @@ func StringXor(s1 string, s2 string) (string, error) {
 	return hex.EncodeToString(answer_bytes), nil
 }
 
-// func BreakSingleCharacterCipher() DecodeState {
+// Challenge 3
+func BreakSingleByteCipher(encodedString string) (state DecodeState) {
+	valueBytes := HexCharsToValues(encodedString)
 
-// }
+	var cipher byte
+	for cipher = 0; cipher < 0xFF; cipher++ {
+		decodedBytes := make([]byte, len(valueBytes))
+
+		for i, c := range valueBytes {
+			decodedBytes[i] = c ^ cipher
+		}
+
+		decodedString := string(decodedBytes)
+
+		if newScore := stringScore(decodedString); newScore > state.Score {
+			state = DecodeState{Score: newScore, String: decodedString, Cipher: cipher}
+		}
+	}
+	return
+}
