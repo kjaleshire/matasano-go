@@ -1,6 +1,6 @@
 package matasano
 
-func stringScore(s string) (score uint) {
+func stringScore(s string) (score int) {
 	for _, c := range s {
 		switch {
 		case c >= 'A' && c <= 'Z':

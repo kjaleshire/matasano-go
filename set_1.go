@@ -1,34 +1,30 @@
 package matasano
 
 import (
+	"bufio"
 	"encoding/base64"
 	"encoding/hex"
+	"os"
 )
 
 type DecodeState struct {
-	Score  uint
-	Cipher uint8
-	Line   uint32
+	Score  int
+	Cipher byte
+	Line   int
 	String string
 }
 
 // Challenge 1
 func HexCharsToValuesBase64(s string) string {
-	b := HexCharsToValues(s)
-
-	return base64.StdEncoding.EncodeToString(b)
+	return base64.StdEncoding.EncodeToString(HexCharsToValues(s))
 }
 
 // Challenge 2
-func StringXor(s1 string, s2 string) (string, error) {
+func StringXor(s1 string, s2 string) string {
 	bytes_1, err := hex.DecodeString(s1)
-	if err != nil {
-		return "", err
-	}
-
-	bytes_2, err := hex.DecodeString(s2)
-	if err != nil {
-		return "", err
+	bytes_2, err2 := hex.DecodeString(s2)
+	if err != nil || err2 != nil {
+		panic(err.Error())
 	}
 
 	var byte_size int
@@ -43,11 +39,11 @@ func StringXor(s1 string, s2 string) (string, error) {
 		answer_bytes[i] = bytes_1[i] ^ bytes_2[i]
 	}
 
-	return hex.EncodeToString(answer_bytes), nil
+	return hex.EncodeToString(answer_bytes)
 }
 
 // Challenge 3
-func BreakSingleByteCipher(encodedString string) (state DecodeState) {
+func BreakSingleLineByteCipher(encodedString string) (state DecodeState) {
 	valueBytes := HexCharsToValues(encodedString)
 
 	var cipher byte
@@ -63,6 +59,28 @@ func BreakSingleByteCipher(encodedString string) (state DecodeState) {
 		if newScore := stringScore(decodedString); newScore > state.Score {
 			state = DecodeState{Score: newScore, String: decodedString, Cipher: cipher}
 		}
+	}
+	return
+}
+
+// Challenge 4
+func BreakMultiLineFileByteCipher(filePath string) (state DecodeState) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	lineNumber := 1
+	for scanner.Scan() {
+		decode := BreakSingleLineByteCipher(scanner.Text())
+		if decode.Score > state.Score {
+			decode.Line = lineNumber
+			state = decode
+		}
+		lineNumber++
 	}
 	return
 }
