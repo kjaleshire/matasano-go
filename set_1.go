@@ -1,11 +1,7 @@
 package matasano
 
 import (
-	"bufio"
 	"bytes"
-	"crypto/aes"
-	"encoding/base64"
-	"os"
 )
 
 type DecodeState struct {
@@ -18,7 +14,7 @@ type DecodeState struct {
 
 // Challenge 1
 func HexDecodeBase64(s string) string {
-	return base64.StdEncoding.EncodeToString(HexDecodeString(s))
+	return Base64EncodeString(HexDecodeString(s))
 }
 
 // Challenge 2
@@ -49,8 +45,8 @@ func BreakSingleLineByteKey(encodedBytes []byte) (state DecodeState) {
 	for key = 0; key < 0xFF; key++ {
 		decodedBytes := make([]byte, len(encodedBytes))
 
-		for i, c := range encodedBytes {
-			decodedBytes[i] = c ^ key
+		for index, currentByte := range encodedBytes {
+			decodedBytes[index] = currentByte ^ key
 		}
 
 		decodedString := string(decodedBytes)
@@ -64,13 +60,8 @@ func BreakSingleLineByteKey(encodedBytes []byte) (state DecodeState) {
 
 // Challenge 4
 func BreakMultiLineFileByteKey(filePath string) (state DecodeState) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		panic(err.Error())
-	}
+	scanner, file := NewScanner(filePath)
 	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
 
 	lineNumber := 1
 	for scanner.Scan() {
@@ -89,41 +80,34 @@ func BreakMultiLineFileByteKey(filePath string) (state DecodeState) {
 func RepeatingKeyXor(stringToEncode, key []byte) string {
 	encodedBytes := make([]byte, len(stringToEncode))
 
-	for i, b := range stringToEncode {
-		encodedBytes[i] = b ^ key[i%len(key)]
+	for index, currentByte := range stringToEncode {
+		encodedBytes[index] = currentByte ^ key[index%len(key)]
 	}
 
 	return HexEncodeToString(encodedBytes)
 }
 
 // Challenge 6
-func BreakRepeatingKeyXorFile(filePath string) (state DecodeState) {
-	fileString := dumpFileBytes(filePath)
-
-	srcBytes, err := base64.StdEncoding.DecodeString(fileString)
-	if err != nil {
-		panic(err.Error())
-	}
-
+func BreakRepeatingKeyXorString(cipherText string) (state DecodeState) {
+	cipherBytes := []byte(cipherText)
 	minKeySize := 2
 	maxKeySize := 64
 	state.Score = 9000
 
 	for keySize := minKeySize; keySize <= maxKeySize; keySize++ {
 		distance := 0
-		passes := len(srcBytes)/keySize - 1
+		passes := len(cipherBytes)/keySize - 1
 		for i := 0; i < passes; i++ {
-			distance += HammingBitDistance(srcBytes[keySize*i:keySize*(i+1)], srcBytes[keySize*(i+1):keySize*(i+2)])
+			distance += HammingBitDistance(cipherBytes[keySize*i:keySize*(i+1)], cipherBytes[keySize*(i+1):keySize*(i+2)])
 		}
-		avgDistance := float32(distance) / float32(passes)
-		normalizedDistance := avgDistance / float32(keySize)
-		if normalizedDistance < state.Score {
-			state = DecodeState{Score: normalizedDistance, KeySize: keySize}
+		normalizedAvgDistance := (float32(distance) / float32(passes)) / float32(keySize)
+		if normalizedAvgDistance < state.Score {
+			state = DecodeState{Score: normalizedAvgDistance, KeySize: keySize}
 		}
 	}
 
-	numberBlocks := len(srcBytes) / state.KeySize
-	if len(srcBytes)%state.KeySize > 0 {
+	numberBlocks := len(cipherBytes) / state.KeySize
+	if len(cipherBytes)%state.KeySize > 0 {
 		numberBlocks += 1
 	}
 	blocks := make([][]byte, state.KeySize)
@@ -132,64 +116,44 @@ func BreakRepeatingKeyXorFile(filePath string) (state DecodeState) {
 		blocks[i] = make([]byte, numberBlocks)
 
 		for j := 0; j < numberBlocks; j++ {
-			if index := j*state.KeySize + i; index < len(srcBytes) {
-				blocks[i][j] = srcBytes[index]
+			if index := j*state.KeySize + i; index < len(cipherBytes) {
+				blocks[i][j] = cipherBytes[index]
 			}
 		}
 	}
 
 	key := make([]byte, state.KeySize)
 
-	for i, block := range blocks {
-		s := BreakSingleLineByteKey(block)
-		key[i] = []byte(s.Key)[0]
+	for index, block := range blocks {
+		singleState := BreakSingleLineByteKey(block)
+		key[index] = []byte(singleState.Key)[0]
 	}
 	state.Key = string(key)
-	state.String = string(HexDecodeString(RepeatingKeyXor(srcBytes, key)))
+	state.String = string(HexDecodeString(RepeatingKeyXor(cipherBytes, key)))
 
 	return
 }
 
 // Challenge 7
-func DecodeAes128EcbFile(filePath string, key []byte) string {
-	fileString := dumpFileBytes(filePath)
+func DecryptAesEcbString(cipherText string, key []byte) string {
+	block, blockSize := setupAesBlock(key, len(cipherText))
 
-	srcBytes, err := base64.StdEncoding.DecodeString(fileString)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	blockSize := block.BlockSize()
-	if len(srcBytes)%blockSize != 0 {
-		panic("Need a multiple of the blocksize")
-	}
-
-	decodedBytes := make([]byte, len(srcBytes))
-	dst := decodedBytes
-	src := []byte(srcBytes)
+	plainBytes := make([]byte, len(cipherText))
+	dst := plainBytes
+	src := []byte(cipherText)
 	for len(src) > 0 {
 		block.Decrypt(dst, src[:blockSize])
 		src = src[blockSize:]
 		dst = dst[blockSize:]
 	}
 
-	return string(decodedBytes)
+	return string(plainBytes)
 }
 
 // Challenge 8
-func DetectAesEcbFileLine(filePath string) (lineNumber int) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		panic(err.Error())
-	}
+func DetectEcbFileLine(filePath string) (lineNumber int) {
+	scanner, file := NewScanner(filePath)
 	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
 
 	lineNumber += 1
 	for scanner.Scan() {

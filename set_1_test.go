@@ -58,23 +58,25 @@ func TestHammingDistance(t *testing.T) {
 }
 
 func TestBreakingRepeatingKeyXorFile(t *testing.T) {
-	decodeResult := matasano.BreakRepeatingKeyXorFile(C6FilePath)
+	cipherBytes := matasano.Base64DecodeString(matasano.DumpFileBytes(C6FilePath))
+	decodeResult := matasano.BreakRepeatingKeyXorString(string(cipherBytes))
 	if decodeResult.Key != C6Key {
 		t.Errorf("Wrong answer, got key %s\nSize: %d\n", decodeResult.Key, decodeResult.KeySize)
 	}
 }
 
 // Challenge 7 tests
-func TestDecodingAes128EcbWithKey(t *testing.T) {
-	result := matasano.DecodeAes128EcbFile(C7FilePath, []byte(C7Key))
+func TestDecodingAesEcbWithKey(t *testing.T) {
+	cipherBytes := matasano.Base64DecodeString(matasano.DumpFileBytes(C7FilePath))
+	result := matasano.DecryptAesEcbString(string(cipherBytes), []byte(C7Key))
 	if result[0:len(C7DecodedFirstLine)] != C7DecodedFirstLine {
 		t.Errorf("Wrong answer, got %s\n", result[0:len(C7DecodedFirstLine)])
 	}
 }
 
 // Challenge 8 tests
-func TestDetectAesEcbFileLine(t *testing.T) {
-	lineNumber := matasano.DetectAesEcbFileLine(C8FilePath)
+func TestDetectEcbFileLine(t *testing.T) {
+	lineNumber := matasano.DetectEcbFileLine(C8FilePath)
 	if lineNumber != C8LineNumber {
 		t.Errorf("Wrong answer, got line %d\n", lineNumber)
 	}
