@@ -23,7 +23,8 @@ func TestStringXor(t *testing.T) {
 
 // Challenge 3 test
 func TestSingleStringByteCipherDetecting(t *testing.T) {
-	decode := matasano.BreakSingleLineByteCipher(EncodedString)
+	valueBytes := matasano.HexCharsToValues(EncodedString)
+	decode := matasano.BreakSingleLineByteCipher(valueBytes)
 	if decode.String != DecodedString || decode.Cipher != DecodedCipher {
 		t.Errorf("Wrong answer, got %s with cipher 0x%x", decode.String, decode.Cipher)
 	}
@@ -39,8 +40,23 @@ func TestMultiStringFileByteCipherDetecting(t *testing.T) {
 
 // Challenge 5 test
 func TestReapeatingKeyXor(t *testing.T) {
-	encodedString := matasano.RepeatingKeyXor(OpeningStanza, RepeatingKeyCipher)
+	encodedString := matasano.RepeatingKeyXor([]byte(OpeningStanza), []byte(RepeatingKeyCipher))
 	if encodedString != RepeatingXorResult {
 		t.Errorf("Wrong answer, got %s", encodedString)
+	}
+}
+
+// Challenge 6 tests
+func TestHammingDistance(t *testing.T) {
+	distance := matasano.HammingBitDistance([]byte(HammingString1), []byte(HammingString2))
+	if distance != HammingDistance {
+		t.Errorf("Wrong answer, got %d", distance)
+	}
+}
+
+func TestBreakRepeatingKeyXorFile(t *testing.T) {
+	decode := matasano.BreakRepeatingKeyXorFile(RepeatingKeyXorFilePath)
+	if decode.Key != RepeatingXorKey {
+		t.Errorf("Wrong answer, got key %s\nSize: %d", decode.Key, decode.KeySize)
 	}
 }

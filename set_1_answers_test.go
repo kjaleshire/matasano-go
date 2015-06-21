@@ -24,3 +24,11 @@ const DecodedFileLine int = 171
 const OpeningStanza string = "Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal"
 const RepeatingKeyCipher string = "ICE"
 const RepeatingXorResult string = "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f"
+
+// Challenge 6 const's
+const HammingString1 string = "this is a test"
+const HammingString2 string = "wokka wokka!!!"
+const HammingDistance int = 37
+
+const RepeatingKeyXorFilePath string = "fixtures/6.txt"
+const RepeatingXorKey string = "Terminator X: Bring the noise"
