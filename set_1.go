@@ -2,15 +2,14 @@ package matasano
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/aes"
 	"encoding/base64"
-	"encoding/hex"
 	"os"
 )
 
 type DecodeState struct {
 	Score   float32
-	ByteKey byte
 	Key     string
 	KeySize int
 	Line    int
@@ -18,50 +17,46 @@ type DecodeState struct {
 }
 
 // Challenge 1
-func HexCharsToValuesBase64(s string) string {
-	return base64.StdEncoding.EncodeToString(HexCharsToValues(s))
+func HexDecodeBase64(s string) string {
+	return base64.StdEncoding.EncodeToString(HexDecodeString(s))
 }
 
 // Challenge 2
 func StringXor(s1 string, s2 string) string {
-	bytes_1, err1 := hex.DecodeString(s1)
-	bytes_2, err2 := hex.DecodeString(s2)
-	if err1 != nil {
-		panic(err1.Error())
-	}
-	if err2 != nil {
-		panic(err2.Error())
+	bytes1 := HexDecodeString(s1)
+	bytes2 := HexDecodeString(s2)
+
+	return HexEncodeToString(ByteSliceXor(bytes1, bytes2))
+}
+
+func ByteSliceXor(bytes1, bytes2 []byte) []byte {
+	byteSize := len(bytes1)
+	if len(bytes2) < len(bytes1) {
+		byteSize = len(bytes2)
 	}
 
-	var byte_size int
-	if len(bytes_1) < len(bytes_2) {
-		byte_size = len(bytes_1)
-	} else {
-		byte_size = len(bytes_2)
+	result := make([]byte, byteSize)
+	for i := 0; i < byteSize; i++ {
+		result[i] = bytes1[i] ^ bytes2[i]
 	}
 
-	answer_bytes := make([]byte, byte_size)
-	for i := 0; i < byte_size; i++ {
-		answer_bytes[i] = bytes_1[i] ^ bytes_2[i]
-	}
-
-	return hex.EncodeToString(answer_bytes)
+	return result
 }
 
 // Challenge 3
 func BreakSingleLineByteKey(encodedBytes []byte) (state DecodeState) {
-	var ByteKey byte
-	for ByteKey = 0; ByteKey < 0xFF; ByteKey++ {
+	var key byte
+	for key = 0; key < 0xFF; key++ {
 		decodedBytes := make([]byte, len(encodedBytes))
 
 		for i, c := range encodedBytes {
-			decodedBytes[i] = c ^ ByteKey
+			decodedBytes[i] = c ^ key
 		}
 
 		decodedString := string(decodedBytes)
 
 		if newScore := float32(stringScore(decodedString)); newScore > state.Score {
-			state = DecodeState{Score: newScore, String: decodedString, ByteKey: ByteKey}
+			state = DecodeState{Score: newScore, String: decodedString, Key: string(key)}
 		}
 	}
 	return
@@ -79,7 +74,7 @@ func BreakMultiLineFileByteKey(filePath string) (state DecodeState) {
 
 	lineNumber := 1
 	for scanner.Scan() {
-		encodedBytes := HexCharsToValues(scanner.Text())
+		encodedBytes := HexDecodeString(scanner.Text())
 		decode := BreakSingleLineByteKey(encodedBytes)
 		if decode.Score > state.Score {
 			decode.Line = lineNumber
@@ -98,23 +93,12 @@ func RepeatingKeyXor(stringToEncode, key []byte) string {
 		encodedBytes[i] = b ^ key[i%len(key)]
 	}
 
-	return hex.EncodeToString(encodedBytes)
+	return HexEncodeToString(encodedBytes)
 }
 
 // Challenge 6
 func BreakRepeatingKeyXorFile(filePath string) (state DecodeState) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		panic(err.Error())
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-
-	fileString := ""
-	for scanner.Scan() {
-		fileString += scanner.Text()
-	}
+	fileString := dumpFileBytes(filePath)
 
 	srcBytes, err := base64.StdEncoding.DecodeString(fileString)
 	if err != nil {
@@ -158,28 +142,17 @@ func BreakRepeatingKeyXorFile(filePath string) (state DecodeState) {
 
 	for i, block := range blocks {
 		s := BreakSingleLineByteKey(block)
-		key[i] = s.ByteKey
+		key[i] = []byte(s.Key)[0]
 	}
 	state.Key = string(key)
-	state.String = string(HexCharsToValues(RepeatingKeyXor(srcBytes, key)))
+	state.String = string(HexDecodeString(RepeatingKeyXor(srcBytes, key)))
 
 	return
 }
 
 // Challenge 7
 func DecodeAes128EcbFile(filePath string, key []byte) string {
-	file, err := os.Open(filePath)
-	if err != nil {
-		panic(err.Error())
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-
-	fileString := ""
-	for scanner.Scan() {
-		fileString += scanner.Text()
-	}
+	fileString := dumpFileBytes(filePath)
 
 	srcBytes, err := base64.StdEncoding.DecodeString(fileString)
 	if err != nil {
@@ -206,4 +179,31 @@ func DecodeAes128EcbFile(filePath string, key []byte) string {
 	}
 
 	return string(decodedBytes)
+}
+
+// Challenge 8
+func DetectAesEcbFileLine(filePath string) (lineNumber int) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	lineNumber += 1
+	for scanner.Scan() {
+		encodedBytes := HexDecodeString(scanner.Text())
+
+		var currentBlock []byte
+		for len(encodedBytes[16:]) > 0 {
+			currentBlock = encodedBytes[0:16]
+			encodedBytes = encodedBytes[16:]
+			if bytes.Contains(encodedBytes, currentBlock) {
+				return
+			}
+		}
+		lineNumber++
+	}
+	return
 }

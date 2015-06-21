@@ -12,12 +12,12 @@ const C2XorResult string = "746865206b696420646f6e277420706c6179"
 // Challenge 3 consts
 const C3EncodedString string = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"
 const C3DecodedString string = "Cooking MC's like a pound of bacon"
-const C3ByteKey byte = 0x58
+const C3Key string = "\x58"
 
 // Challenge 4 consts
 const C4FilePath string = "fixtures/4.txt"
 const C4DecodedString string = "Now that the party is jumping\n"
-const C4ByteKey byte = 0x35
+const C4Key string = "\x35"
 const C4FileLine int = 171
 
 // Challenge 5 consts
@@ -37,3 +37,7 @@ const C6Key string = "Terminator X: Bring the noise"
 const C7FilePath string = "fixtures/7.txt"
 const C7Key string = "YELLOW SUBMARINE"
 const C7DecodedFirstLine string = "I'm back and I'm ringin' the bell"
+
+// Challenge 8 consts
+const C8FilePath string = "fixtures/8.txt"
+const C8LineNumber int = 133
