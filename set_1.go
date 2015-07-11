@@ -5,11 +5,15 @@ import (
 )
 
 type DecodeState struct {
-	Score   float32
-	Key     string
-	KeySize int
-	Line    int
-	String  string
+	Score  float32
+	Key    byte
+	Line   int
+	String string
+}
+
+type KeyState struct {
+	Distance float32
+	Size     int
 }
 
 // Challenge 1
@@ -52,7 +56,7 @@ func BreakSingleLineByteKey(encodedBytes []byte) (state DecodeState) {
 		decodedString := string(decodedBytes)
 
 		if newScore := float32(stringScore(decodedString)); newScore > state.Score {
-			state = DecodeState{Score: newScore, String: decodedString, Key: string(key)}
+			state = DecodeState{Score: newScore, String: decodedString, Key: key}
 		}
 	}
 	return
@@ -88,50 +92,40 @@ func RepeatingKeyXor(stringToEncode, key []byte) string {
 }
 
 // Challenge 6
-func BreakRepeatingKeyXorString(cipherText string) (state DecodeState) {
+func BreakRepeatingKeyXorString(cipherText string) []byte {
 	cipherBytes := []byte(cipherText)
 	minKeySize := 2
 	maxKeySize := 64
-	state.Score = 9000
-
+	state := KeyState{Distance: 9000}
 	for keySize := minKeySize; keySize <= maxKeySize; keySize++ {
-		distance := 0
+		total_distance := 0
 		passes := len(cipherBytes)/keySize - 1
 		for i := 0; i < passes; i++ {
-			distance += HammingBitDistance(cipherBytes[keySize*i:keySize*(i+1)], cipherBytes[keySize*(i+1):keySize*(i+2)])
+			total_distance += HammingBitDistance(cipherBytes[keySize*i:keySize*(i+1)],
+				cipherBytes[keySize*(i+1):keySize*(i+2)])
 		}
-		normalizedAvgDistance := (float32(distance) / float32(passes)) / float32(keySize)
-		if normalizedAvgDistance < state.Score {
-			state = DecodeState{Score: normalizedAvgDistance, KeySize: keySize}
+		normalizedAvgDistance := float32(total_distance) / float32(passes*keySize)
+		if normalizedAvgDistance < state.Distance {
+			state = KeyState{Distance: normalizedAvgDistance, Size: keySize}
 		}
 	}
 
-	numberBlocks := len(cipherBytes) / state.KeySize
-	if len(cipherBytes)%state.KeySize > 0 {
-		numberBlocks += 1
-	}
-	blocks := make([][]byte, state.KeySize)
+	numberBlocks := len(cipherBytes) / state.Size
 
-	for i := 0; i < state.KeySize; i++ {
-		blocks[i] = make([]byte, numberBlocks)
+	key := make([]byte, state.Size)
+
+	for i := 0; i < state.Size; i++ {
+		block := make([]byte, numberBlocks)
 
 		for j := 0; j < numberBlocks; j++ {
-			if index := j*state.KeySize + i; index < len(cipherBytes) {
-				blocks[i][j] = cipherBytes[index]
-			}
+			block[j] = cipherBytes[j*state.Size+i]
 		}
-	}
 
-	key := make([]byte, state.KeySize)
-
-	for index, block := range blocks {
 		singleState := BreakSingleLineByteKey(block)
-		key[index] = []byte(singleState.Key)[0]
+		key[i] = singleState.Key
 	}
-	state.Key = string(key)
-	state.String = string(HexDecodeString(RepeatingKeyXor(cipherBytes, key)))
 
-	return
+	return key
 }
 
 // Challenge 7

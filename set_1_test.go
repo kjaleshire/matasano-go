@@ -59,9 +59,9 @@ func TestHammingDistance(t *testing.T) {
 
 func TestBreakingRepeatingKeyXorFile(t *testing.T) {
 	cipherBytes := matasano.Base64DecodeString(matasano.DumpFileBytes(C6FilePath))
-	decodeResult := matasano.BreakRepeatingKeyXorString(string(cipherBytes))
-	if decodeResult.Key != C6Key {
-		t.Errorf("Wrong answer, got key %s\nSize: %d\n", decodeResult.Key, decodeResult.KeySize)
+	key := matasano.BreakRepeatingKeyXorString(string(cipherBytes))
+	if string(key) != C6Key {
+		t.Errorf("Wrong answer, got key %s\n", key)
 	}
 }
 
