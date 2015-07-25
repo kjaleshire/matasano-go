@@ -5,11 +5,8 @@ import (
 	"unicode"
 )
 
-func stringScore(s string) (score float32) {
-	score += scoreChars(s)
-	score += scorePunc(s)
-	score += scoreDigraphs(s)
-	return
+func stringScore(s string) float32 {
+	return scoreChars(s) + scoreDigraphs(s)
 }
 
 func scoreChars(s string) (score float32) {
@@ -67,14 +64,6 @@ func scoreChars(s string) (score float32) {
 			score += 0.10
 		case 'Z':
 			score += 0.07
-		}
-	}
-	return
-}
-
-func scorePunc(s string) (score float32) {
-	for _, c := range s {
-		switch c {
 		case ' ':
 			score += 10.0
 		case '-', '\'', '\n', '/', ',', '.', '?', '!':

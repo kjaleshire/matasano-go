@@ -1,10 +1,8 @@
 package matasano
 
-import (
-	"bytes"
-)
+import "bytes"
 
-type DecodeState struct {
+type ByteKeyState struct {
 	Score  float32
 	Key    byte
 	Line   int
@@ -23,16 +21,13 @@ func HexDecodeBase64(s string) string {
 
 // Challenge 2
 func StringXor(s1 string, s2 string) string {
-	bytes1 := HexDecodeString(s1)
-	bytes2 := HexDecodeString(s2)
-
-	return HexEncodeToString(ByteSliceXor(bytes1, bytes2))
+	return HexEncodeToString(ByteSliceXor(HexDecodeString(s1), HexDecodeString(s2)))
 }
 
 func ByteSliceXor(bytes1, bytes2 []byte) []byte {
 	byteSize := len(bytes1)
-	if len(bytes2) < len(bytes1) {
-		byteSize = len(bytes2)
+	if l := len(bytes2); l < len(bytes1) {
+		byteSize = l
 	}
 
 	result := make([]byte, byteSize)
@@ -44,7 +39,7 @@ func ByteSliceXor(bytes1, bytes2 []byte) []byte {
 }
 
 // Challenge 3
-func BreakSingleLineByteKey(encodedBytes []byte) (state DecodeState) {
+func BreakSingleLineByteKey(encodedBytes []byte) (state ByteKeyState) {
 	var key byte
 	for key = 0; key < 0xFF; key++ {
 		decodedBytes := make([]byte, len(encodedBytes))
@@ -56,24 +51,24 @@ func BreakSingleLineByteKey(encodedBytes []byte) (state DecodeState) {
 		decodedString := string(decodedBytes)
 
 		if newScore := float32(stringScore(decodedString)); newScore > state.Score {
-			state = DecodeState{Score: newScore, String: decodedString, Key: key}
+			state = ByteKeyState{Score: newScore, String: decodedString, Key: key}
 		}
 	}
 	return
 }
 
 // Challenge 4
-func BreakMultiLineFileByteKey(filePath string) (state DecodeState) {
+func BreakMultiLineFileByteKey(filePath string) (state ByteKeyState) {
 	scanner, file := NewScanner(filePath)
 	defer file.Close()
 
 	lineNumber := 1
 	for scanner.Scan() {
 		encodedBytes := HexDecodeString(scanner.Text())
-		decode := BreakSingleLineByteKey(encodedBytes)
-		if decode.Score > state.Score {
-			decode.Line = lineNumber
-			state = decode
+		trial_state := BreakSingleLineByteKey(encodedBytes)
+		if trial_state.Score > state.Score {
+			trial_state.Line = lineNumber
+			state = trial_state
 		}
 		lineNumber++
 	}
@@ -140,7 +135,6 @@ func DecryptAesEcbString(cipherText string, key []byte) string {
 		src = src[blockSize:]
 		dst = dst[blockSize:]
 	}
-
 	return string(plainBytes)
 }
 

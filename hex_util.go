@@ -1,8 +1,6 @@
 package matasano
 
-import (
-	"encoding/hex"
-)
+import "encoding/hex"
 
 func HexDecodeString(s string) []byte {
 	b, err := hex.DecodeString(s)

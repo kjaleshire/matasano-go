@@ -1,8 +1,9 @@
 package matasano_test
 
 import (
-	matasano "github.com/kjaleshire/matasano-go"
 	"testing"
+
+	matasano "github.com/kjaleshire/matasano-go"
 )
 
 // Challenge 1 test
