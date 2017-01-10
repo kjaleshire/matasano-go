@@ -1,9 +1,11 @@
 package matasano_test
 
 import (
-	matasano "github.com/kjaleshire/matasano-go"
+	"fmt"
 	"reflect"
 	"testing"
+
+	matasano "github.com/kjaleshire/matasano-go"
 )
 
 // Challenge 9 test
@@ -20,7 +22,7 @@ func TestAes128CbcEncryption(t *testing.T) {
 
 	cipherBytes := matasano.Base64DecodeString(cipherText)
 	decryptedResult := matasano.DecryptAesCbcString([]byte(cipherText), []byte(C10Key), []byte(C10IV))
-
+	fmt.Printf("%s", string(decryptedResult))
 	cipherBytesRedux := matasano.EncryptAesCbcString(decryptedResult, []byte(C10Key), []byte(C10IV))
 	if reflect.DeepEqual(cipherBytes, cipherBytesRedux) {
 		t.Errorf("Wrong answer, got %s\n", string(cipherBytesRedux))

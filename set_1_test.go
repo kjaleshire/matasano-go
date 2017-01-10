@@ -69,7 +69,7 @@ func TestBreakingRepeatingKeyXorFile(t *testing.T) {
 // Challenge 7 tests
 func TestDecodingAesEcbWithKey(t *testing.T) {
 	cipherBytes := matasano.Base64DecodeString(matasano.DumpFileBytes(C7FilePath))
-	result := matasano.DecryptAesEcbString(string(cipherBytes), []byte(C7Key))
+	result := matasano.DecryptAesEcbText(string(cipherBytes), []byte(C7Key))
 	if result[0:len(C7DecodedFirstLine)] != C7DecodedFirstLine {
 		t.Errorf("Wrong answer, got %s\n", result[0:len(C7DecodedFirstLine)])
 	}

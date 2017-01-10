@@ -1,5 +1,7 @@
 package matasano
 
+import "fmt"
+
 // Challenge 9
 func PKCSNo7Padding(message string, blockSize int) string {
 	paddingLen := (len(message)/blockSize + 1) * blockSize % len(message)
@@ -23,6 +25,11 @@ func DecryptAesCbcString(cipherBytes, key, iv []byte) string {
 		for i := 0; i < blockSize; i++ {
 			dst[i] = dst[i] ^ iv[i]
 		}
+
+		fmt.Printf("CIPHER %#v\n", src[:blockSize])
+		fmt.Printf("TEXT %#v\n", dst[:blockSize])
+		fmt.Printf("IV %#v\n", iv)
+
 		iv = src[:blockSize]
 		src = src[blockSize:]
 		dst = dst[blockSize:]
@@ -43,6 +50,7 @@ func EncryptAesCbcString(plainText string, key, iv []byte) []byte {
 			src[i] = src[i] ^ iv[i]
 		}
 		block.Encrypt(dst, src[:blockSize])
+
 		iv = dst[:blockSize]
 		src = src[blockSize:]
 		dst = dst[blockSize:]

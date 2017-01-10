@@ -93,13 +93,13 @@ func BreakRepeatingKeyXorString(cipherText string) []byte {
 	maxKeySize := 64
 	state := KeyState{Distance: 9000}
 	for keySize := minKeySize; keySize <= maxKeySize; keySize++ {
-		total_distance := 0
+		totalDistance := 0
 		passes := len(cipherBytes)/keySize - 1
 		for i := 0; i < passes; i++ {
-			total_distance += HammingBitDistance(cipherBytes[keySize*i:keySize*(i+1)],
+			totalDistance += HammingBitDistance(cipherBytes[keySize*i:keySize*(i+1)],
 				cipherBytes[keySize*(i+1):keySize*(i+2)])
 		}
-		normalizedAvgDistance := float32(total_distance) / float32(passes*keySize)
+		normalizedAvgDistance := float32(totalDistance) / float32(passes*keySize)
 		if normalizedAvgDistance < state.Distance {
 			state = KeyState{Distance: normalizedAvgDistance, Size: keySize}
 		}
@@ -124,7 +124,7 @@ func BreakRepeatingKeyXorString(cipherText string) []byte {
 }
 
 // Challenge 7
-func DecryptAesEcbString(cipherText string, key []byte) string {
+func DecryptAesEcbText(cipherText string, key []byte) string {
 	block, blockSize := setupAesBlock(key, len(cipherText))
 
 	plainBytes := make([]byte, len(cipherText))
@@ -143,7 +143,7 @@ func DetectEcbFileLine(filePath string) (lineNumber int) {
 	scanner, file := NewScanner(filePath)
 	defer file.Close()
 
-	lineNumber += 1
+	lineNumber++
 	for scanner.Scan() {
 		encodedBytes := HexDecodeString(scanner.Text())
 
